@@ -1,0 +1,59 @@
+spring:
+    application.name: resilience4j-demo
+    jackson.serialization.indent_output: true
+
+server:
+    port: 9080
+
+management.endpoints.web.exposure.include: '*'
+management.endpoint.health.show-details: always
+
+management.health.diskspace.enabled: false
+
+info:
+    name: ${spring.application.name}
+    description: resilience4j demo
+    environment: ${spring.profiles.active}
+    version: 0.0.1
+
+management.metrics.tags.application: ${spring.application.name}
+management.metrics.distribution.percentiles-histogram.http.server.requests: true
+management.metrics.distribution.percentiles-histogram.resilience4j.circuitbreaker.calls: true
+
+#resilience4j.circuitbreaker.metrics.use_legacy_binder: true
+
+resilience4j.circuitbreaker:
+    configs:
+        default:
+            registerHealthIndicator: false
+            slidingWindowSize: 10
+            minimumNumberOfCalls: 5
+            permittedNumberOfCallsInHalfOpenState: 3
+            automaticTransitionFromOpenToHalfOpenEnabled: true
+            waitDurationInOpenState: 2s
+            failureRateThreshold: 50
+            eventConsumerBufferSize: 100
+            recordExceptions:
+                - org.springframework.web.client.HttpServerErrorException
+                - java.io.IOException
+            ignoreExceptions:
+                - io.github.robwin.exception.BusinessException
+    instances:
+        backendA:
+            baseConfig: default
+        backendB:
+            baseConfig: default
+            minimumNumberOfCalls: 10
+resilience4j.retry:
+    configs:
+        default:
+            maxRetryAttempts: 2
+            waitDuration: 1000
+            retryExceptions:
+                - org.springframework.web.client.HttpServerErrorException
+                - java.io.IOException
+            ignoreExceptions:
+                - io.github.robwin.exception.BusinessException
+    instances:
+        backendB:
+            maxRetryAttempts: 3
